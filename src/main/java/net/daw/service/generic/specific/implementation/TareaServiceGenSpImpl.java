@@ -17,12 +17,21 @@
  */
 package net.daw.service.generic.specific.implementation;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import net.daw.service.generic.implementation.TableServiceGenImpl;
 import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import javax.servlet.ServletException;
 import net.daw.bean.generic.specific.implementation.TareaBeanGenSpImpl;
 import net.daw.dao.generic.specific.implementation.TareaDaoGenSpImpl;
 import net.daw.helper.AppConfigurationHelper;
+import net.daw.helper.EncodingUtilHelper;
+import net.daw.helper.ExceptionBooster;
+import net.daw.helper.FilterBeanHelper;
 
 public class TareaServiceGenSpImpl extends TableServiceGenImpl {
 
@@ -41,5 +50,68 @@ public class TareaServiceGenSpImpl extends TableServiceGenImpl {
         } catch (Exception e) {
             throw new ServletException("GetDescripcion: View Error: " + e.getMessage());
         }
+    }
+        
+    @Override
+    public String set(String jason) throws Exception {
+        String resultado = null;
+        try {
+            oConnection.setAutoCommit(false);
+            TareaDaoGenSpImpl oTareaDAO = new TareaDaoGenSpImpl(strObjectName, oConnection);
+            TareaBeanGenSpImpl oTarea = new TareaBeanGenSpImpl();
+            Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
+            jason = EncodingUtilHelper.decodeURIComponent(jason);
+            oTarea = gson.fromJson(jason, oTarea.getClass());
+            oTarea = oTareaDAO.set(oTarea);
+            Map<String, String> data = new HashMap<>();
+            data.put("status", "200");
+            data.put("message", Integer.toString(oTarea.getId()));
+            resultado = gson.toJson(data);
+            oConnection.commit();
+        } catch (Exception ex) {
+            oConnection.rollback();
+            ExceptionBooster.boost(new Exception(this.getClass().getName() + ":set ERROR: " + ex.getMessage()));
+        }
+        return resultado;
+    }
+    
+    @Override
+    public String get(Integer id) throws Exception {
+        String data = null;
+        try {
+            oConnection.setAutoCommit(false);
+            TareaDaoGenSpImpl oTareaDAO = new TareaDaoGenSpImpl(strObjectName, oConnection);
+            TareaBeanGenSpImpl oTarea = new TareaBeanGenSpImpl(id);
+            oTarea = oTareaDAO.get(oTarea, AppConfigurationHelper.getJsonDepth());
+            GsonBuilder gsonBuilder = new GsonBuilder();
+            gsonBuilder.setDateFormat("dd/MM/yyyy HH:mm:ss");
+            Gson gson = gsonBuilder.create();
+            data = gson.toJson(oTarea);
+            oConnection.commit();
+        } catch (Exception ex) {
+            oConnection.rollback();
+            ExceptionBooster.boost(new Exception(this.getClass().getName() + ":get ERROR: " + ex.getMessage()));
+        }
+        return data;
+    }
+
+    @Override
+    public String getPage(int intRegsPerPag, int intPage, ArrayList<FilterBeanHelper> alFilter, HashMap<String, String> hmOrder) throws Exception {
+        String data = null;
+        try {
+            oConnection.setAutoCommit(false);
+            TareaDaoGenSpImpl oTareaDAO = new TareaDaoGenSpImpl(strObjectName, oConnection);
+            List<TareaBeanGenSpImpl> oTareas = oTareaDAO.getPage(intRegsPerPag, intPage, alFilter, hmOrder);
+            GsonBuilder gsonBuilder = new GsonBuilder();
+            gsonBuilder.setDateFormat("dd/MM/yyyy HH:mm:ss");
+            Gson gson = gsonBuilder.create();
+            data = gson.toJson(oTareas);
+            data = "{\"list\":" + data + "}";
+            oConnection.commit();
+        } catch (Exception ex) {
+            oConnection.rollback();
+            ExceptionBooster.boost(new Exception(this.getClass().getName() + ":getPage ERROR: " + ex.getMessage()));
+        }
+        return data;
     }
 }

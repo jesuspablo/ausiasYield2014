@@ -19,12 +19,22 @@ package net.daw.dao.generic.specific.implementation;
 
 import net.daw.dao.generic.implementation.TableDaoGenImpl;
 import java.sql.Connection;
+import java.text.SimpleDateFormat;
+import net.daw.bean.generic.specific.implementation.EstadotareaBeanGenSpImpl;
 import net.daw.bean.generic.specific.implementation.TareaBeanGenSpImpl;
+import net.daw.bean.generic.specific.implementation.TipotareaBeanGenSpImpl;
+import net.daw.bean.generic.specific.implementation.UsuarioBeanGenSpImpl;
+import net.daw.helper.AppConfigurationHelper;
+import net.daw.helper.ExceptionBooster;
 
 public class TareaDaoGenSpImpl extends TableDaoGenImpl<TareaBeanGenSpImpl> {
 
+    private String strTableName = "tarea";
+    private Connection oConnection = null;
    public TareaDaoGenSpImpl(String strFuente, Connection pooledConnection) throws Exception {
         super(strFuente, "Tarea", pooledConnection);
+        oConnection = pooledConnection;
+        
     }
 
 //    public String getDescription(int id) throws Exception {
@@ -40,4 +50,53 @@ public class TareaDaoGenSpImpl extends TableDaoGenImpl<TareaBeanGenSpImpl> {
 //        description += " (" + oDocumentoBean.getHits().toString() + " hits)";
 //        return description;
 //    }
+@Override
+    public TareaBeanGenSpImpl get(TareaBeanGenSpImpl oTareaBean, Integer expand) throws Exception {
+        if (oTareaBean.getId() > 0) {
+            try {
+                if (!oMysql.existsOne(strTableName, oTareaBean.getId())) {
+                    oTareaBean.setId(0);
+                } else {
+                    expand--;
+                    if (expand > 0) {
+                        oTareaBean.setDescripcion(oMysql.getOne(strTableName, "descripcion", oTareaBean.getId()));
+
+                        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                        String dateInString = oMysql.getOne(strTableName, "fechaentrega", oTareaBean.getId());
+                        oTareaBean.setFechaentrega(formatter.parse(dateInString));
+
+                        oTareaBean.setId_usuario(Integer.parseInt(oMysql.getOne(strTableName, "id_usuario", oTareaBean.getId())));
+                        oTareaBean.setId_estadotarea(Integer.parseInt(oMysql.getOne(strTableName, "id_estadotarea", oTareaBean.getId())));
+                        oTareaBean.setId_tipotarea(Integer.parseInt(oMysql.getOne(strTableName, "id_tipotarea", oTareaBean.getId())));
+
+                        
+                        UsuarioBeanGenSpImpl oUsuario = new UsuarioBeanGenSpImpl();
+                        oUsuario.setId(Integer.parseInt(oMysql.getOne(strTableName, "id_usuario", oTareaBean.getId())));
+                        UsuarioDaoGenSpImpl oUsuarioDAO1 = new UsuarioDaoGenSpImpl("usuario", oConnection);
+                        oUsuario = oUsuarioDAO1.get(oUsuario, AppConfigurationHelper.getJsonDepth());
+                        oTareaBean.setObj_usuario(oUsuario);
+                        
+                        TipotareaBeanGenSpImpl oTipotarea = new TipotareaBeanGenSpImpl();
+                        oTipotarea.setId(Integer.parseInt(oMysql.getOne(strTableName, "id_tipotarea", oTareaBean.getId())));
+                        TipotareaDaoGenSpImpl oTipotareaDAO1 = new TipotareaDaoGenSpImpl("tipotarea", oConnection);
+                        oTipotarea = oTipotareaDAO1.get(oTipotarea, AppConfigurationHelper.getJsonDepth());
+                        oTareaBean.setObj_tipotarea(oTipotarea);
+
+
+                        EstadotareaBeanGenSpImpl oEstadotarea = new EstadotareaBeanGenSpImpl();
+                        oEstadotarea.setId(Integer.parseInt(oMysql.getOne(strTableName, "id_estadotarea", oTareaBean.getId())));
+                        EstadotareaDaoGenSpImpl oEstadotareaDAO2 = new EstadotareaDaoGenSpImpl("estadotarea", oConnection);
+                        oEstadotarea = oEstadotareaDAO2.get(oEstadotarea, AppConfigurationHelper.getJsonDepth());
+                        oTareaBean.setObj_estadotarea(oEstadotarea);
+                    }
+                }
+            } catch (Exception ex) {
+                ExceptionBooster.boost(new Exception(this.getClass().getName() + ":get ERROR: " + ex.getMessage()));
+            }
+        } else {
+            oTareaBean.setId(0);
+        }
+        return oTareaBean;
+    }
+
 }

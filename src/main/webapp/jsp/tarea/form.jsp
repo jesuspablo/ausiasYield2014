@@ -207,6 +207,9 @@
                 .on('change', '[name="id_usuario"]', function() {
                     $('#tareaForm').bootstrapValidator('revalidateField', 'id_usuario');
                 })
+                 .on('change', '[name="id_estadotarea"]', function() {
+                    $('#tareaForm').bootstrapValidator('revalidateField', 'id_estadotarea');
+                })
 
                 .on('change', '[name="id_tipotarea"]', function() {
                     $('#tareaForm').bootstrapValidator('revalidateField', 'id_tipotarea');
